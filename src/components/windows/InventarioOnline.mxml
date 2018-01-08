@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" close="PopUpManager.removePopUp(this)" layout="absolute" width="606" height="482" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="INVENTARIO">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager; 
+				]]>
+	</mx:Script>
+	<mx:Label x="10" y="13" text="Fecha Actualizacion" fontWeight="normal"/>
+	<mx:Button x="504" y="410" width="35" id="btnEliminar0" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/printer.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="538" y="410" width="38" id="btnSalir" toolTip="SALIR" click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:DataGrid x="10" y="97" width="566" height="305">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Cod.Primario" dataField="col1" width="90" />
+			<mx:DataGridColumn headerText="Cod.Secundario" dataField="col1" width="100" />
+			<mx:DataGridColumn headerText="Descripcion" dataField="col2"/>
+			<mx:DataGridColumn headerText="Estado" dataField="col3" width="50" />
+			<mx:DataGridColumn headerText="Cantidad " dataField="col3" width="80"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Label x="10" y="41" text="Empresa"/>
+	<mx:ComboBox x="142" y="39"></mx:ComboBox>
+	<mx:Label x="142" y="13" text="01-08-2011 08:00 a.m" textDecoration="underline"/>
+	<mx:Label x="10" y="69" text="Descripcion"/>
+	<mx:TextInput x="142" y="67" width="297"/>
+	<mx:Button x="447" y="67" width="35" id="btnBuscar0" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	
+	
+</mx:TitleWindow>

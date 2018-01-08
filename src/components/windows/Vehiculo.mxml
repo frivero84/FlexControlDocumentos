@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" close="PopUpManager.removePopUp(this)" layout="absolute" width="606" height="360" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="VEHICULO">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager; 
+				]]>
+	</mx:Script>
+	<mx:Button x="404" y="287" width="35" id="btnGuardar" toolTip="GUARDAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_save.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="370" y="287" width="35" id="btnNuevo" toolTip="NUEVO">
+		<mx:icon>@Embed(source='../../embedded/images/crud_new.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="437" y="287" width="35" id="btnBuscar" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="471" y="287" width="35" id="btnEliminar" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_delete.png')</mx:icon>
+	</mx:Button>
+	<mx:Label x="11" y="12" text="Placa Batea"/>
+	<mx:Label x="10" y="40" text="Placa Chuto"/>
+	<mx:Label x="10" y="66" text="Conductor"/>
+	<mx:Label x="10" y="92" text="Nombre"/>
+	<mx:TextInput x="121" y="10"/>
+	<mx:TextInput x="121" y="36"/>
+	<mx:TextInput x="121" y="62" width="160"/>
+	<mx:TextInput x="121" y="88" width="455"/>
+	<mx:Button x="504" y="287" width="35" id="btnEliminar0" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/printer.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="538" y="287" width="38" id="btnSalir" toolTip="SALIR" click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:DataGrid x="10" y="118" width="566" height="112">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Documento" dataField="col1"/>
+			<mx:DataGridColumn headerText="Fecha Expedicion" dataField="col2"/>
+			<mx:DataGridColumn headerText="Fecha Vencimiento" dataField="col3"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="541" y="229" width="35" id="btnNuevo0" toolTip="NUEVO">
+		<mx:icon>@Embed(source='../../embedded/images/minus.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="504" y="229" width="35" id="btnNuevo1" toolTip="NUEVO">
+		<mx:icon>@Embed(source='../../embedded/images/plus.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="289" y="62" width="35" id="btnBuscar0" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	
+	
+</mx:TitleWindow>

@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"
+				close="PopUpManager.removePopUp(this)"
+				layout="absolute"
+				width="802"
+				height="408"
+				borderColor="#AFF71C"
+				cornerRadius="20"
+				backgroundColor="#FFFFFF"
+				showCloseButton="true"
+				horizontalAlign="left"
+				verticalAlign="bottom"
+				title="NUEVO DOCUMENTO"
+				xmlns:comp="com.adobe.flex.extras.controls.*"
+				creationComplete="init()">
+	<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.managers.CursorManager;
+			import mx.events.ListEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			import context.Session;
+
+			private var remote:RemoteObject;
+
+			[Bindable]
+			[Embed(source='embedded/images/info_large.gif')]
+			private var iconOk:Class;
+
+			[Bindable]
+			[Embed(source='embedded/images/warning_large.gif')]
+			private var iconAdvertencia:Class;
+
+			[Bindable]
+			[Embed(source='embedded/images/error_large.gif')]
+			private var iconError:Class;
+
+
+
+			[Bindable]
+			public var listaDocumentos:ArrayCollection=new ArrayCollection();
+
+			[Bindable]
+			public var listaDias:ArrayCollection=new ArrayCollection();
+
+
+			public var dia:Object;
+
+
+
+			private function init():void
+			{
+
+
+
+				dtpFecha.formatString="DD/MM/YYYY";
+				dtpFecha.selectedDate=new Date();
+				txtNombre.setFocus();
+
+				txtUkid.text=Session.getUkid().toString();
+
+				if (Session.getAccion() == "Editar")
+				{
+					title="EDITAR DOCUMENTO";
+					remote=new RemoteObject();
+					remote.destination="brokerPrimario";
+					CursorManager.setBusyCursor();
+					remote.addEventListener(ResultEvent.RESULT, resultHandlerDocumento);
+					remote.addEventListener(FaultEvent.FAULT, faultHandler);
+					remote.getDocumento("WHERE UKID='" + Session.getUkid().toString() + "'");
+				}
+				else
+				{
+					if (Session.getAccion() == "Agregar")
+					{
+						title="NUEVO DOCUMENTO";
+						remote=new RemoteObject();
+						remote.destination="brokerPrimario";
+						remote.addEventListener(ResultEvent.RESULT, resultHandlerCargarNumeroDoc);
+						remote.addEventListener(FaultEvent.FAULT, faultHandler);
+						remote.obtenerSiguienteNumeroDOC();
+					}
+					else
+					{
+
+						if (Session.getAccion() == "Duplicar")
+						{
+							title="DUPLICAR DOCUMENTO";
+
+							remote=new RemoteObject();
+							remote.destination="brokerPrimario";
+							CursorManager.setBusyCursor();
+							remote.addEventListener(ResultEvent.RESULT, resultHandlerDocumento);
+							remote.addEventListener(FaultEvent.FAULT, faultHandler);
+							remote.getDocumento("WHERE UKID='" + Session.getUkid().toString() + "'");
+
+
+							remote=new RemoteObject();
+							remote.destination="brokerPrimario";
+							remote.addEventListener(ResultEvent.RESULT, resultHandlerCargarNumeroDoc);
+							remote.addEventListener(FaultEvent.FAULT, faultHandler);
+							remote.obtenerSiguienteNumeroDOC();
+						}
+
+					}
+
+				}
+
+
+			}
+
+			private function resultHandlerCargarNumeroDoc(event:ResultEvent):void
+			{
+				var numero:int=event.result as int;
+				txtUkid.text=numero.toString();
+				CursorManager.removeAllCursors();
+				//txtDescripcion.setFocus();
+
+			}
+
+			private function resultHandlerDocumento(event:ResultEvent):void
+			{
+
+				var documento:Object=new Object();
+				documento=event.result as Object;
+
+				if (documento != null)
+				{
+					txtNombre.text=documento.nombre;
+
+					dtpFecha.text=documento.fecha_vencimiento;
+					if (documento.estado == "ACTIVO")
+					{
+						ragActivo.selected=true;
+						ragInactivo.selected=false;
+					}
+					else
+					{
+						ragActivo.selected=false;
+						ragInactivo.selected=true;
+					}
+
+
+
+					if (documento.disparar_diariamente == "1")
+					{
+						chkAvisoDiario.selected=true;
+					}
+					else
+					{
+						chkAvisoDiario.selected=false;
+					}
+
+					txtDiasAvisoDiario.value=documento.dias_diariamente;
+					listaDias=documento.dias_aviso;
+
+					txtDestinatarios.text=documento.grupo_destinatario;
+
+
+
+				}
+
+				CursorManager.removeBusyCursor();
+
+			}
+
+
+
+			private function faultHandler(event:FaultEvent):void
+			{
+
+				CursorManager.removeBusyCursor();
+				var mensaje:String;
+				mensaje=event.fault.faultString.substr(event.fault.faultString.search(":") + 1, event.fault.faultString.length - event.fault.faultString.search(":"));
+				if (mensaje.length == 0)
+					mensaje=event.fault.rootCause.toString();
+				Alert.show(mensaje, "ERROR SISTEMA");
+				CursorManager.removeBusyCursor();
+			}
+
+			private function agregarDia():void
+			{
+				var x:int=0;
+				var encontrado:Boolean=false;
+
+				while ((x < listaDias.length) && (!encontrado))
+				{
+
+					if ((listaDias.getItemAt(x) == txtDia.value))
+					{
+						encontrado=true;
+						listaDias.removeItemAt(x);
+					}
+					x++;
+				}
+				listaDias.addItem(txtDia.value);
+				detailsDias.visible=false;
+			}
+
+			private function limpiar():void
+			{
+
+				txtNombre.text="";
+				ragActivo.selected=true;
+				dtpFecha.selectedDate=new Date();
+				listaDias.removeAll();
+				chkAvisoDiario.selected=false;
+				txtCantidadDiasAviso.value=0;
+
+				remote=new RemoteObject();
+				remote.destination="brokerPrimario";
+				remote.addEventListener(ResultEvent.RESULT, resultHandlerCargarNumeroDoc);
+				remote.addEventListener(FaultEvent.FAULT, faultHandler);
+				remote.obtenerSiguienteNumeroDOC();
+
+			}
+
+			private function guardarDocumento():void
+			{
+				if (esValidoDocumento() == true)
+				{
+					var documento:Object=new Object();
+					documento.ukid=txtUkid.text;
+					documento.nombre=txtNombre.text;
+					documento.fecha_vencimiento=dtpFecha.text;
+					if (ragActivo.selected == true)
+					{
+						documento.estado="ACTIVO";
+					}
+					else
+					{
+						documento.estado="INACTIVO";
+					}
+
+					if (chkAvisoDiario.selected==true)
+					{documento.disparar_diariamente=1;}
+					else
+					{
+						documento.diparar_diariamente=0;
+					}
+					documento.dias_diariamente=txtDiasAvisoDiario.value;
+					documento.grupo_destinatario=txtDestinatarios.text;
+
+					documento.dias=listaDias;
+					documento.compania=1;
+					documento.sucursal=Session.getIdPlanilla();
+					documento.usuario= Session.getLoggedUser();
+
+					detailsEnvioDatos.visible=true;
+					remote=new RemoteObject();
+					remote.destination="brokerPrimario";
+					remote.addEventListener(ResultEvent.RESULT, resultHandlerGuardarOrden);
+					remote.addEventListener(FaultEvent.FAULT, faultHandler);
+					remote.guardarDocumento(documento);
+				}
+
+			}
+
+			private function resultHandlerGuardarOrden(event:ResultEvent):void
+			{
+				PopUpManager.removePopUp(this);
+				detailsEnvioDatos.visible=false;
+				limpiar();
+				Alert.show("Se Ha Guardardo Correctamente el Documento !", "INFORMACION", Alert.OK, this, null, iconOk);
+
+
+			}
+
+			private function esValidoDocumento():Boolean
+			{
+				var valor:Boolean
+				valor=true;
+
+
+
+				if (listaDias.length == 0)
+				{
+					Alert.show("El documento debe tener al menos un (1) dia establecido para el aviso !", "ERROR", Alert.OK, this, null, iconError);
+					valor=false
+
+				}
+
+
+				if (txtNombre.text.length == 0)
+				{
+					Alert.show("El documento debe tener un nombre !", "ERROR", Alert.OK, this, null, iconError);
+					valor=false
+
+				}
+
+
+
+
+				return valor;
+
+			}
+			
+			
+			public function validar(id:DateField):void
+			{
+
+				var hoy:Date=new Date();
+
+				if (id.selectedDate.getDate() < hoy.getDate())
+				{
+					id.selectedDate=new Date();
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:Button x="700"
+			   y="336"
+			   width="35"
+			   id="btnGuardar"
+			   toolTip="GUARDAR"
+			   click="guardarDocumento()">
+		<mx:icon>@Embed(source='../../embedded/images/crud_save.png')</mx:icon>
+	</mx:Button>
+	<mx:Label x="10"
+			  y="43"
+			  text="Nombre:"/>
+	<mx:Label x="10"
+			  y="74"
+			  text="Estado:"/>
+	<mx:Label x="10"
+			  y="103"
+			  text="Fecha de Vencimiento:"/>
+	<mx:TextInput x="183"
+				  y="39"
+				  width="589"
+				  maxChars="1000"
+				  id="txtNombre"/>
+	<mx:Button x="734"
+			   y="336"
+			   width="38"
+			   id="btnSalir"
+			   toolTip="SALIR"
+			   click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:RadioButtonGroup id="radiogroup1"/>
+	<mx:RadioButton x="183"
+					y="69"
+					label="ACTIVO"
+					groupName="radiogroup1"
+					width="78"
+					enabled="true"
+					selected="true"
+					id="ragActivo"/>
+	<mx:RadioButton x="269"
+					y="69"
+					label="INACTIVO"
+					groupName="radiogroup1"
+					id="ragInactivo"/>
+	<mx:DateField x="183"
+				  y="99"
+				  width="163"
+				  id="dtpFecha" />
+	<mx:List x="183"
+			 y="129"
+			 width="88"
+			 height="122"
+			 id="lstDias"
+			 dataProvider="{listaDias}">
+	</mx:List>
+	<mx:Label x="10"
+			  y="129"
+			  text="Dias establecidos"
+			  height="23"/>
+	<mx:CheckBox x="10"
+				 y="261"
+				 label="Disparar diariamente un aviso cuando falten"
+				 width="278"
+				 id="chkAvisoDiario"
+				 selected="false"/>
+	<mx:NumericStepper x="285"
+					   y="261"
+					   width="61"
+					   id="txtDiasAvisoDiario"
+					   maximum="365"
+					   minimum="7"/>
+	<mx:Label x="354"
+			  y="263"
+			  text="dias para el vencimiento"
+			  height="22"/>
+	<mx:Button x="311"
+			   y="129"
+			   width="35"
+			   id="btnEliminarDia"
+			   toolTip="ELIMINAR DIA AVISO"
+			   click="listaDias.removeItemAt(lstDias.selectedIndex);">
+		<mx:icon>@Embed(source='../../embedded/images/minus.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="276"
+			   y="129"
+			   width="35"
+			   id="btnAgregarDia"
+			   click="detailsDias.visible=true;"
+			   toolTip="AGREGAR DIA AVISO">
+		<mx:icon>@Embed(source='../../embedded/images/plus.png')</mx:icon>
+	</mx:Button>
+	<mx:TitleWindow visible="false"
+					id="detailsAviso"
+					x="107"
+					y="77"
+					width="429"
+					height="130"
+					layout="absolute"
+					showCloseButton="true"
+					backgroundColor="#C8FE8E"
+					borderStyle="solid"
+					borderThickness="6"
+					borderColor="#999999"
+					title="Incluir Dias para Aviso"
+					close="detailsAviso.visible=false"
+					color="#000000">
+		<mx:Label x="0"
+				  y="12"
+				  text="Enviar aviso cuando falten: "
+				  id="lblInspeccion3"
+				  fontWeight="bold"/>
+		<mx:Button x="113.5"
+				   y="53"
+				   label="Agregar"
+				   width="75"
+				   id="btnAgregarEstimacion0"
+				   click=""/>
+		<mx:Button x="208.5"
+				   y="53"
+				   label="Salir"
+				   width="75"
+				   click="detailsAviso.visible=false"/>
+		<mx:Button x="231"
+				   y="2"
+				   width="35"
+				   id="btnBuscarItem"
+				   visible="false"
+				   toolTip="BUSCAR"
+				   click="">
+			<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+		</mx:Button>
+		<mx:NumericStepper x="168"
+						   y="10"
+						   width="65"
+						   minimum="1"
+						   maximum="1000"
+						   stepSize="1"
+						   id="txtCantidadDiasAviso"/>
+		<mx:Label x="241"
+				  y="12"
+				  text=" dias para el vencimiento"
+				  id="lblInspeccion0"
+				  fontWeight="bold"/>
+	</mx:TitleWindow>
+	<mx:Label x="10"
+			  y="144"
+			  text="antes del vencimiento"
+			  height="23"/>
+	<mx:Label x="10"
+			  y="160"
+			  text="del documento para envio"
+			  height="23"/>
+	<mx:Label x="10"
+			  y="175"
+			  text="del aviso:"
+			  height="23"/>
+	<mx:Label x="10"
+			  y="295"
+			  text="Destinatarios para envio de aviso:"/>
+
+	<mx:TitleWindow visible="false"
+					id="detailsDias"
+					x="169"
+					y="77"
+					width="218"
+					height="133"
+					layout="absolute"
+					showCloseButton="true"
+					backgroundColor="#C8FE8E"
+					borderStyle="solid"
+					borderThickness="6"
+					borderColor="#999999"
+					title="Incluir dias en Documento"
+					close="detailsDias.visible=false"
+					color="#000000">
+		<mx:Label x="10"
+				  y="12"
+				  text="Cantidad"
+				  id="lblFecha1"
+				  fontWeight="bold"/>
+		<mx:NumericStepper x="89"
+						   y="10"
+						   width="91"
+						   id="txtDia"
+						   maximum="100000"
+						   minimum="1"/>
+		<mx:Button x="0"
+				   y="55"
+				   label="Agregar"
+				   width="75"
+				   id="btnAgregar"
+				   click="agregarDia()"/>
+		<mx:Button x="95"
+				   y="55"
+				   label="Salir"
+				   width="75"
+				   click="detailsDias.visible=false"/>
+	</mx:TitleWindow>
+
+	<mx:TitleWindow visible="false"
+					id="detailsEnvioDatos"
+					width="441"
+					height="104"
+					layout="absolute"
+					showCloseButton="false"
+					backgroundColor="#FAFB93"
+					borderStyle="solid"
+					borderThickness="6"
+					borderColor="#7F7F7F"
+					title="Envio de Datos"
+					close="detailsEnvioDatos.visible=false"
+					color="#000000"
+					x="72.5"
+					y="152">
+		<mx:ProgressBar id="pg"
+						visible="true"
+						x="29"
+						y="10"
+						width="351"
+						label="Enviando la Informacion"
+						maximum="100"
+						minimum="0"
+						indeterminate="true"
+						fontSize="14"/>
+	</mx:TitleWindow>
+	<mx:TextInput x="183"
+				  y="9"
+				  width="70"
+				  id="txtUkid"/>
+	<mx:Label x="10"
+			  y="11"
+			  text="ID:"/>
+	<mx:TextInput x="215"
+				  y="293"
+				  width="557"
+				  maxChars="1000"
+				  id="txtDestinatarios"/>
+	<mx:Label x="7"
+			  y="310"
+			  text="(separados por punto y coma ( ; ) )"/>
+
+
+</mx:TitleWindow>

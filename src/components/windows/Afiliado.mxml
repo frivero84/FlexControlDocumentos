@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" close="PopUpManager.removePopUp(this)" layout="absolute" width="606" height="298" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="AFILIADO">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager; 
+				]]>
+	</mx:Script>
+	<mx:Button x="404" y="226" width="35" id="btnGuardar" toolTip="GUARDAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_save.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="370" y="226" width="35" id="btnNuevo" toolTip="NUEVO">
+		<mx:icon>@Embed(source='../../embedded/images/crud_new.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="437" y="226" width="35" id="btnBuscar" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="471" y="226" width="35" id="btnEliminar" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_delete.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="504" y="226" width="35" id="btnEliminar0" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/printer.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="538" y="226" width="38" id="btnSalir" toolTip="SALIR" click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:Label x="10" y="21" text="Nombre"/>
+	<mx:Label x="10" y="47" text="Cedula o RIF"/>
+	<mx:Label x="10" y="73" text="Direccion"/>
+	<mx:Label x="10" y="99" text="Telefono Oficina"/>
+	<mx:TextInput x="121" y="17"/>
+	<mx:TextInput x="121" y="43"/>
+	<mx:TextInput x="121" y="69" width="455"/>
+	<mx:TextInput x="121" y="95"/>
+	<mx:Label x="10" y="125" text="Representante"/>
+	<mx:TextInput x="121" y="121"/>
+	<mx:Label x="10" y="155" text="Correo Electronico"/>
+	<mx:TextInput x="121" y="151" width="455"/>
+	<mx:Label x="305" y="99" text="Telefono Movil 1"/>
+	<mx:TextInput x="416" y="95"/>
+	<mx:Label x="305" y="125" text="Telefono Movil 2"/>
+	<mx:TextInput x="416" y="121"/>
+	
+	
+</mx:TitleWindow>

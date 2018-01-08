@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" close="PopUpManager.removePopUp(this)" layout="absolute" width="606" height="446" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="GESTION DE COBRO">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager; 
+				]]>
+	</mx:Script>
+	<mx:Label x="10" y="69" text="Afiliado"/>
+	<mx:Label x="10" y="13" text="Fecha Desde"/>
+	<mx:TextInput x="120" y="67" width="112"/>
+	<mx:Button x="504" y="354" width="35" id="btnEliminar0" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/printer.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="538" y="354" width="38" id="btnSalir" toolTip="SALIR" click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:DataGrid x="10" y="179" width="566" height="167">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Fecha" dataField="col1" width="80" />
+			<mx:DataGridColumn headerText="Origen-Destino" dataField="col1" />
+			<mx:DataGridColumn headerText="Monto" dataField="col3" width="80" />
+			<mx:DataGridColumn headerText="Pagado ?" dataField="col3" width="80"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:DateField x="121" y="11" width="111"/>
+	<mx:Label x="10" y="41" text="Fecha Hasta"/>
+	<mx:DateField x="121" y="39" width="111"/>
+	<mx:Button x="232" y="67" width="35" id="btnBuscar0" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	<mx:TextInput x="267" y="67" width="309"/>
+	<mx:CheckBox x="120" y="97" label="Pagados"/>
+	<mx:CheckBox x="215" y="97" label="Pendientes"/>
+	<mx:Label x="10" y="101" text="Movimientos"/>
+	
+	
+</mx:TitleWindow>

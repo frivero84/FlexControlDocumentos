@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml"  creationComplete="init()" layout="absolute" width="574" height="366" title="Catalogo de  Conductores">
+
+<mx:Script>
+		<![CDATA[
+			
+			import mx.managers.PopUpManager; 
+			import mx.controls.Alert;
+			
+			import mx.collections.ArrayCollection;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.events.ListEvent;
+			import mx.managers.CursorManager;
+			
+			
+			
+			
+			
+			[Bindable]
+			private var listaValores:ArrayCollection;
+			
+			
+			
+			[Bindable]
+            public var valoresCombo:ArrayCollection = new ArrayCollection(
+                [ {label:"Nombre", data:1}, 
+                  {label:"Cedula", data:2} ]);
+			
+			private var idCat:String = "";
+			private var nombreCat:String = "";
+			private const brokerCatalog:String="brokerPrimario";
+			private var evento:String = "salir";
+			
+			  [Bindable]
+            [Embed(source='embedded/images/error_large.gif')]
+             private var iconError:Class;   
+			
+			
+			public function getEvento():String
+			{
+				return evento;
+			}
+			
+			public function getIdCat():String
+			{
+				return idCat;
+			}
+			
+			public function getnombreCat():String
+			{
+				return nombreCat;
+			}
+			
+			private function init():void {
+			    
+				var remote:RemoteObject = new RemoteObject();
+				CursorManager.setBusyCursor();
+				remote.destination = brokerCatalog;
+				remote.addEventListener(ResultEvent.RESULT, reportResultHandler);
+				remote.addEventListener(FaultEvent.FAULT, reportFaultHandler);				
+				remote.getConductores("");	
+			}
+			
+			
+			private function buscar():void{
+			
+				var remote:RemoteObject = new RemoteObject();
+				remote.destination = brokerCatalog;
+				remote.addEventListener(ResultEvent.RESULT, busquedaResultHandler);
+				remote.addEventListener(FaultEvent.FAULT, faultHandlerError);	
+				
+				CursorManager.setBusyCursor();
+				
+				switch(cmbFiltrar.selectedLabel)
+				{
+				  case "Cedula":
+				  {
+				  	remote.getConductores(" where upper(cedula) like '%"+ txtBuscar.text.toUpperCase() +"%'");
+				    break;
+				  }
+				  
+				  case "Nombre":
+				  {
+				  	remote.getConductores(" where upper(nombre) like '%"+ txtBuscar.text.toUpperCase() +"%'");
+				    break;
+				  }
+				  
+				  default:
+				  {
+				    break;
+				  }
+				  
+				
+				}
+				
+				
+				 
+			}
+			
+		
+			private function reportResultHandler(event:ResultEvent):void {
+				listaValores = event.result as ArrayCollection;
+				CursorManager.removeBusyCursor();
+			
+			}
+			
+			 private function faultHandlerError(event:FaultEvent):void {
+				
+				var mensaje:String;
+				mensaje=event.fault.faultString.substr(event.fault.faultString.search(":")+1,event.fault.faultString.length-event.fault.faultString.search(":"));
+				if (mensaje.length==0)
+				mensaje= event.fault.rootCause.toString();
+				Alert.show(mensaje,"ERROR SISTEMA",Alert.OK,this,null,iconError);
+				
+			}
+			
+			private function reportFaultHandler(event:FaultEvent):void {
+				Alert.show("List:" + event.fault.rootCause.toString());
+			}
+			
+			
+			private function busquedaResultHandler(event:ResultEvent):void {
+				listaValores = event.result as ArrayCollection;
+				CursorManager.removeBusyCursor();
+			
+			
+			}
+			
+			
+			
+			private function cerrar():void{
+			   cursorManager.removeAllCursors();	
+			   dispatchEvent(new Event(Event.CLOSE));
+		  	   PopUpManager.removePopUp(this);
+			}
+			
+			private function seleccionar():void{
+			   cursorManager.removeAllCursors();	
+			   evento="seleccionar";
+			   dispatchEvent(new Event(Event.CLOSE));
+		  	   PopUpManager.removePopUp(this);
+			}
+			
+			
+		    private function itemClickEvent(event:ListEvent):void {
+	            
+	            idCat=event.currentTarget.selectedItem.cedula;
+	            nombreCat=event.currentTarget.selectedItem.nombre;
+	            
+	        }
+	        
+		]]>
+	</mx:Script>
+
+
+	<mx:Button x="384.5" y="251" click="seleccionar()" height="30" width="119" label="Seleccionar">
+		<mx:icon>@Embed(source='embedded/images/success_large_16.gif')</mx:icon>
+	</mx:Button>
+	<mx:DataGrid x="50.5" y="24" width="453" height="219" id="grdDetails"   horizontalScrollPolicy="off"  doubleClick="cerrar()" itemClick="itemClickEvent(event)" fontSize="9" dataProvider="{listaValores}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Cedula" dataField="cedula" width="100" textAlign="center" />
+			<mx:DataGridColumn headerText="Nombre" dataField="nombre" textAlign="center" />
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="384.5" y="286" label="Salir" click="cerrar()" height="30" width="119">
+		<mx:icon>@Embed(source='embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:TextInput x="126" y="294" id="txtBuscar" change="buscar()"  width="188"/>
+	<mx:Label x="50.5" y="296" text="Buscar"/>
+	<mx:Label x="50.5" y="257" text="Filtrar Por"/>
+	<mx:ComboBox x="126" y="255" width="188" dataProvider="{valoresCombo}"   id="cmbFiltrar"></mx:ComboBox>
+	
+</mx:TitleWindow>

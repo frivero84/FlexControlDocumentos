@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="530" height="176" title="Acceso al Sistema" creationComplete="init()" activate="txtUsername.setFocus();">
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager; 
+			import mx.managers.CursorManager;
+			
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.controls.Alert;
+			import context.Session;
+			
+			
+			private var user:Object;
+			private var permisos:String;
+			private var remote:RemoteObject;
+			[Bindable]
+			private var actions:ArrayCollection= new ArrayCollection();
+			[Bindable]
+            [Embed(source='embedded/images/error_large.gif')]
+             private var iconError:Class;   
+			
+			
+		      [Bindable]
+            [Embed(source='embedded/images/warning_large.gif')]
+             private var iconAdvertencia:Class;   
+             
+			
+			private function init():void {
+				txtUsername.setFocus();
+			}
+			
+			public function checkLogin():void  {
+				
+				detailsEnvioDatos.visible=true;
+				remote = new RemoteObject();
+				remote.destination = "brokerPrimario";
+				cursorManager.setBusyCursor();
+				remote.addEventListener(ResultEvent.RESULT, resultHandler);
+				remote.addEventListener(FaultEvent.FAULT, faultHandlerRetrieveUsuario);
+				CursorManager.setBusyCursor();
+				remote.checkLogin(txtUsername.text, txtPassword.text);
+				
+			}
+
+			private function resultHandler(event:ResultEvent):void {
+					
+					detailsEnvioDatos.visible=false;
+					user = event.result as Object;
+				if (user == null) {
+					Alert.show("Login Invalido ó No Tiene Permisos Suficientes para entrar al Sistema, contacte al Administrador","ERROR",Alert.OK,this,null,iconAdvertencia);
+					cursorManager.removeAllCursors();
+				} else {
+
+					Session.setLoggedUser(txtUsername.text.toLowerCase());
+					Session.setNombre(user.valor4);
+					Session.setZonaUser(user.empresa);
+					Session.setIdPlanilla(user.valor3);
+					
+					cursorManager.removeAllCursors();
+					dispatchEvent(new Event("close"));
+					PopUpManager.removePopUp(this)
+					
+				}
+				
+					
+
+			}
+			
+			private function faultHandlerRetrieveUsuario(event:FaultEvent):void {
+				detailsEnvioDatos.visible=false;
+				cursorManager.removeBusyCursor();
+				var mensaje:String;
+				mensaje=event.fault.faultString.substr(event.fault.faultString.search(":")+1,event.fault.faultString.length-event.fault.faultString.search(":"));
+				if (mensaje.length==0)
+				mensaje= event.fault.rootCause.toString();
+				Alert.show(mensaje,"ERROR SISTEMA",Alert.OK,this,null,iconError);
+				//Alert.show(event.fault.faultDetail.toString());
+			}
+			
+		
+		]]>
+	</mx:Script>
+	
+	
+	<mx:Form x="151" y="10" width="334" height="90">
+		<mx:FormItem label="Usuario:">
+			<mx:TextInput id="txtUsername" maxChars="50" editable="true"/>
+		</mx:FormItem>
+		<mx:FormItem label="Contraseña:">
+			<mx:TextInput displayAsPassword="true" maxChars="10" editable="true" id="txtPassword" enter="checkLogin()" width="160"/>
+		</mx:FormItem>
+		
+		
+		
+	</mx:Form>
+	<mx:Button x="429" y="104" label="Login" click="checkLogin()"/>
+	<mx:Image x="25" y="10" height="89" width="118" source="embedded/images/slvlogo.png"/>
+	<mx:Label x="25" y="107" text="v1.1.0"/>
+	
+	<mx:TitleWindow visible="false" id="detailsEnvioDatos" width="434" height="116" layout="absolute" showCloseButton="false" backgroundColor="#FAFB93" borderStyle="solid" borderThickness="6" borderColor="#998F8F" title="Validando usuario..." close="detailsEnvioDatos.visible=false" color="#000000" x="10" y="10">
+    		<mx:ProgressBar id="pg" visible="true" x="29" y="10" width="351" label="Espere por favor !" maximum="100" minimum="0" indeterminate="true" fontSize="14"/>
+    	</mx:TitleWindow>
+	
+</mx:TitleWindow>

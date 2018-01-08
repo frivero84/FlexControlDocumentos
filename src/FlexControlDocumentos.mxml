@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml"
+				layout="absolute"
+				borderColor="#AFF71C"
+				themeColor="#AFF71C"
+				backgroundGradientAlphas="[1.0, 1.0]"
+				backgroundGradientColors="[#FFFFFF, #AFF71C]"
+				height="644"
+				width="1631"
+				creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import components.windows.Cobro;
+			import components.windows.InventarioOnline;
+
+			import mx.managers.PopUpManager;
+			import components.windows.Documento;
+			import components.windows.Login;
+			import components.windows.Afiliado;
+			import components.windows.Configuracion;
+			import components.windows.OrdenCarga;
+			import components.windows.Vehiculo;
+			import components.windows.ConciliarOrdenCarga;
+			import mx.managers.CursorManager;
+			import mx.events.ListEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.events.CloseEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.controls.Alert;
+			import mx.collections.ArrayCollection;
+			import context.Session;
+
+			private var remote:RemoteObject;
+			public var login:Login;
+
+			[Bindable]
+			public var listaDocumentos:ArrayCollection=new ArrayCollection();
+
+			public function showLoginWindow():void  {
+				login = Login(PopUpManager.createPopUp(this, Login, true));
+				login.addEventListener("close", afterLogin);
+				PopUpManager.centerPopUp(login);	
+			}
+
+			private function init():void
+			{
+				showLoginWindow();
+				
+
+			}
+			
+			private function afterLogin(event:Event):void
+			{
+				lblUsuario.text= Session.getNombre();
+				//lblRol.text=Session.getRol();
+				lblEmpresa.text=Session.getZonaUser();
+				appDate.text= new Date().toDateString();
+				refrescarPermisos("WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND  VALOR1='"+ Session.getLoggedUser() +"')");
+
+			}
+
+
+			private function editarDocumento():void
+			{
+
+				if (grdDocumentos.selectedItem != null)
+				{
+					Session.setAccion("Editar");
+					Session.setUkid(grdDocumentos.selectedItem.ukid);
+					PopUpManager.centerPopUp(PopUpManager.createPopUp(panel, Documento, true));
+				}
+				else
+				{
+
+					Alert.show("Debe Seleccionar un Documento !", "Error");
+				}
+
+			}
+
+			private function duplicarDocumento():void
+			{
+
+				if (grdDocumentos.selectedItem != null)
+				{
+					Session.setAccion("Duplicar");
+					Session.setUkid(grdDocumentos.selectedItem.ukid);
+					PopUpManager.centerPopUp(PopUpManager.createPopUp(panel, Documento, true));
+				}
+				else
+				{
+
+					Alert.show("Debe Seleccionar un Documento !", "Error");
+				}
+
+			}
+
+
+
+
+			private function refrescarPermisos(sql:String ):void
+			{
+
+
+				remote=new RemoteObject();
+				remote.destination="brokerPrimario";
+				CursorManager.setBusyCursor();
+				remote.addEventListener(ResultEvent.RESULT, resultHandlerDocumento);
+				remote.addEventListener(FaultEvent.FAULT, faultHandler);
+				remote.getDocumentos(sql);
+
+			}
+			
+			private function refrescarPermisos1():void
+			{
+
+
+				remote=new RemoteObject();
+				remote.destination="brokerPrimario";
+				CursorManager.setBusyCursor();
+				remote.addEventListener(ResultEvent.RESULT, resultHandlerDocumento);
+				remote.addEventListener(FaultEvent.FAULT, faultHandler);
+				remote.getDocumentos("WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND   VALOR1='"+ Session.getLoggedUser() +"')");
+				btnTodos.label="X";
+				btnVerde.label="";
+				btnAmarillo.label="";
+				btnRojo.label="";
+			}
+
+
+			private function resultHandlerDocumento(event:ResultEvent):void
+			{
+				listaDocumentos=event.result as ArrayCollection;
+				CursorManager.removeBusyCursor();
+			}
+			
+			
+			private function resultHandlerEliminarDocumento(event:ResultEvent):void
+			{
+				refrescarPermisos("WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND VALOR1='"+ Session.getLoggedUser() +"')");
+				CursorManager.removeBusyCursor();
+				Alert.show("Se ha eliminado correctamente el documento","Error");
+			}
+			
+
+
+
+			private function faultHandler(event:FaultEvent):void
+			{
+
+				CursorManager.removeBusyCursor();
+				var mensaje:String;
+				mensaje=event.fault.faultString.substr(event.fault.faultString.search(":") + 1, event.fault.faultString.length - event.fault.faultString.search(":"));
+				if (mensaje.length == 0)
+					mensaje=event.fault.rootCause.toString();
+				Alert.show(mensaje, "ERROR SISTEMA");
+			}
+
+
+			private function activarDocumento(color:String)
+			{
+
+				switch (color)
+				{
+					case "verde":
+					{
+						btnAmarillo.label="";
+						btnRojo.label="";
+						btnTodos.label="";
+						btnVerde.label="X";
+						refrescarPermisos(" WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND VALOR1='"+ Session.getLoggedUser() +"') AND DIAS_FALTANTES>=(SELECT CAST(VALOR1 AS INT ) FROM UDC WHERE SISTEMA='TABLAS' AND SUBSISTEMA='CONFIG' AND ID='ALERTA') ");
+						break;
+					}
+
+					case "amarillo":
+					{
+						btnVerde.label="";
+						btnAmarillo.label="X";
+						btnRojo.label="";
+						btnTodos.label="";
+						refrescarPermisos(" WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND VALOR1='"+ Session.getLoggedUser() +"') AND DIAS_FALTANTES>=(SELECT CAST(VALOR2 AS INT ) FROM UDC WHERE SISTEMA='TABLAS' AND SUBSISTEMA='CONFIG' AND ID='ALERTA') AND DIAS_FALTANTES<(SELECT CAST(VALOR1 AS INT ) FROM UDC WHERE SISTEMA='TABLAS' AND SUBSISTEMA='CONFIG' AND ID='ALERTA')  ");
+						break;
+					}
+
+					case "rojo":
+					{
+						btnRojo.label="X";
+						btnVerde.label="";
+						btnAmarillo.label="";
+						btnTodos.label="";
+						refrescarPermisos(" WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND VALOR1='"+ Session.getLoggedUser() +"') AND DIAS_FALTANTES<=(SELECT CAST(VALOR3 AS INT ) FROM UDC WHERE SISTEMA='TABLAS' AND SUBSISTEMA='CONFIG' AND ID='ALERTA') ");
+						break;
+					}
+
+					default:
+					{
+						btnRojo.label="";
+						btnVerde.label="";
+						btnAmarillo.label="";
+						btnTodos.label="X";
+						refrescarPermisos(" WHERE SUCURSAL IN (SELECT VALOR3 FROM UDC WHERE SUBSISTEMA='PERMISO' AND SISTEMA='TABLAS' AND VALOR1='"+ Session.getLoggedUser() +"')  ");
+						
+					}
+
+
+				}
+
+			}
+
+			private function itemClickEventItem(event:ListEvent):void
+			{
+				Session.setAccion("Editar");
+				Session.setUkid(grdDocumentos.selectedItem.ukid);
+				PopUpManager.centerPopUp(PopUpManager.createPopUp(panel, Documento, true));
+			}
+
+			private function agregarDocumento():void
+			{
+				Session.setAccion("Agregar");
+				Session.setUkid(0);
+				PopUpManager.centerPopUp(PopUpManager.createPopUp(panel, Documento, true));
+			}
+
+			private function alertListener(eventObj:CloseEvent):void
+			{
+				// Check to see if the OK button was pressed.
+				if (eventObj.detail == Alert.YES)
+				{
+
+					if (grdDocumentos.selectedItem != null)
+					{
+						var documento:Object=new Object();
+						documento.ukid=grdDocumentos.selectedItem.ukid;
+
+						remote=new RemoteObject();
+						remote.destination="brokerPrimario";
+						CursorManager.setBusyCursor();
+						remote.addEventListener(ResultEvent.RESULT, resultHandlerEliminarDocumento);
+						remote.addEventListener(FaultEvent.FAULT, faultHandler);
+						remote.eliminarDocumento(documento);
+					}
+					else
+					{
+                      Alert.show("Debe Seleccionar un Documento !", "Error");
+					}
+
+
+				}
+			}
+
+
+			private function showAlert():void
+			{
+				Alert.noLabel="No";
+				Alert.yesLabel="Si";
+
+				Alert.show("Realmente desea eliminar este documento ?", "Alerta", Alert.YES | Alert.NO, this, alertListener, null, Alert.OK)
+			}
+			
+			
+			
+		]]>
+	</mx:Script>
+	<mx:ApplicationControlBar id="appControllerBar"
+							  dock="true"
+							  height="79"
+							  fillAlphas="[1.0, 1.0]"
+							  fillColors="[#AFF71C, #AFF71C]"
+							  width="953"
+							  x="0"
+							  y="10">
+		<mx:Image width="500"
+				  height="68"
+				  alpha="0.9" source="embedded/images/SERLOVECA.jpg"/>
+		<mx:Spacer width="91"
+				   height="0"/>
+		<mx:Label text="Usuario:"
+				  id="lblUser"
+				  color="#000000"
+				  fontWeight="bold"
+				  textDecoration="underline"/>
+		<mx:Label
+				  id="lblUsuario"
+				  color="#000000"
+				  fontWeight="bold"
+				  textDecoration="normal"/>
+		<mx:Label text="Empresa:"
+				  id="lblUser0"
+				  color="#000000"
+				  fontWeight="bold"
+				  textDecoration="underline"/>
+		<mx:Label
+				  id="lblEmpresa"
+				  color="#000000"
+				  fontWeight="bold"
+				  textDecoration="normal"/>
+		<mx:Label
+				  id="appDate"
+				  color="#000000"
+				  fontWeight="bold"/>
+		<mx:LinkButton label="SALIR"
+					   id="btnLogoff"
+					   color="#000000"
+					   click="init()"
+					   themeColor="#005B1E"/>
+	</mx:ApplicationControlBar>
+	<mx:Panel x="10"
+			  y="10"
+			  width="1013"
+			  height="462"
+			  layout="absolute"
+			  borderColor="#2C5904"
+			  cornerRadius="20"
+			  backgroundColor="#288A46"
+			  title="                                                                                                                                            PANEL DE CONTROL"
+			  color="#000000"
+			  horizontalAlign="center"
+			  verticalAlign="middle"
+			  backgroundAlpha="0.16"
+			  themeColor="#294C07"
+			  id="panel">
+		<mx:Label x="138"
+				  y="111"
+				  text="AGREGAR"
+				  fontWeight="bold"
+				  color="#000000"/>
+		<mx:Button label="Button"
+				   height="40"
+				   width="40"
+				   cornerRadius="20"
+				   x="35"
+				   y="259"
+				   toolTip="Panel Administrativo"
+				   visible="false"/>
+		<mx:Label x="296.5"
+				  y="111"
+				  text="EDITAR"
+				  fontWeight="bold"
+				  color="#000000"/>
+		<mx:Label x="446.5"
+				  y="111"
+				  text="ELIMINAR"
+				  fontWeight="bold"
+				  color="#000000"/>
+		<mx:Button x="103.5"
+				   y="10"
+				   height="102"
+				   width="122"
+				   borderColor="#FFFFFF"
+				   themeColor="#FFFFFF"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF]"
+				   id="btnAgregar">
+			<mx:icon>@Embed(source='embedded/images/scheduled_tasks.jpg')</mx:icon>
+			<mx:click>
+				agregarDocumento()
+			</mx:click>
+		</mx:Button>
+		<mx:Button x="252.5"
+				   y="10"
+				   height="102"
+				   width="122"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF, #FFFFFF, #FFFFFF]"
+				   themeColor="#FFFFFF"
+				   id="btnEditar">
+			<mx:click>
+				editarDocumento()
+			</mx:click>
+			<mx:icon>@Embed(source='embedded/images/write.jpg')</mx:icon>
+		</mx:Button>
+		<mx:Button x="412.5"
+				   y="10"
+				   height="102"
+				   width="122"
+				   fontWeight="bold"
+				   borderColor="#FFFFFF"
+				   themeColor="#FFFFFF"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF]"
+				   icon="@Embed(source='embedded/images/Eliminar.png')"
+				   id="btnEliminar"
+				   click="showAlert();">
+
+		</mx:Button>
+		<mx:Button x="567.5"
+				   y="10"
+				   height="102"
+				   width="122"
+				   icon="@Embed(source='embedded/images/copy.jpg')"
+				   borderColor="#FFFFFF"
+				   themeColor="#FFFFFF"
+				   cornerRadius="4"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF]"
+				   id="btnDuplicar">
+			<mx:click>
+				duplicarDocumento()
+			</mx:click>
+		</mx:Button>
+		<mx:Label x="591.5"
+				  y="111"
+				  text="DUPLICAR"
+				  fontWeight="bold"
+				  color="#000000"/>
+		<mx:Button x="721"
+				   y="10"
+				   height="102"
+				   width="122"
+				   borderColor="#FFFFFF"
+				   themeColor="#FFFFFF"
+				   cornerRadius="4"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF]"
+				   icon="@Embed(source='embedded/images/configure.png')"
+				   id="btnConfiguracion">
+			<mx:click><![CDATA[Alert.show("Permiso Denegado")
+					//PopUpManager.centerPopUp(PopUpManager.createPopUp(panel, Configuracion, true));
+				]]></mx:click>
+		</mx:Button>
+		<mx:Label x="729"
+				  y="111"
+				  text="CONFIGURACION"
+				  fontWeight="bold"
+				  color="#000000"/>
+		<mx:DataGrid x="10"
+					 y="137"
+					 width="929"
+					 height="277"
+					 dataProvider="{listaDocumentos}"
+					 itemDoubleClick="itemClickEventItem(event)"
+					 doubleClickEnabled="true"
+					 id="grdDocumentos">
+			<mx:columns>
+				<mx:DataGridColumn visible="true"
+								   headerText="ID"
+								   dataField="ukid"
+								   fontSize="9"
+								   width="20"
+								   textAlign="left"/>
+				<mx:DataGridColumn visible="true"
+								   headerText="Sucursal"
+								   dataField="sucursal_str"
+								   fontSize="9"
+								   width="50"
+								   textAlign="left"/>
+				<mx:DataGridColumn headerText="Documento"
+								   dataField="nombre"
+								   fontSize="9"
+								   width="250"
+								   textAlign="left"/>
+				<mx:DataGridColumn headerText="Estado"
+								   dataField="estado"
+								   width="30"
+								   textAlign="center"/>
+				<mx:DataGridColumn headerText="Vencimiento"
+								   dataField="fecha_str"
+								   width="40"
+								   textAlign="center"/>
+				<mx:DataGridColumn headerText="Dias Faltantes"
+								   dataField="dias_faltantes"
+								   width="45"
+								   textAlign="center"/>
+			</mx:columns>
+		</mx:DataGrid>
+		<mx:Button x="947"
+				   y="390"
+				   width="36"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FF0000, #FF0000]"
+				   borderColor="#000000"
+				   cornerRadius="10"
+				   id="btnRojo"
+				   click="activarDocumento(&quot;rojo&quot;);"
+				   fontSize="12"
+				   toolTip="VENCIDO"/>
+		<mx:Button x="947"
+				   y="311"
+				   width="36"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#00FF00, #00FF00, #00FF00, #00FF00]"
+				   cornerRadius="10"
+				   id="btnVerde"
+				   click="activarDocumento(&quot;verde&quot;);"
+				   fontSize="12"
+				   toolTip="LEJANO A VENCER"/>
+		<mx:Button x="947"
+				   y="351"
+				   width="36"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#F6FF00, #F0FF00, #F0FF00, #F0FF00]"
+				   cornerRadius="10"
+				   id="btnAmarillo"
+				   click="activarDocumento(&quot;amarillo&quot;);"
+				   fontSize="12"
+				   toolTip="CERCANO A VENCER"/>
+		<mx:Button x="947"
+				   y="272"
+				   width="36"
+				   fillAlphas="[1.0, 1.0]"
+				   fillColors="[#FFFFFF, #FFFFFF]"
+				   borderColor="#000000"
+				   cornerRadius="10"
+				   label="X"
+				   id="btnTodos"
+				   click="activarDocumento(&quot;blanco&quot;);"
+				   fontSize="12"
+				   toolTip="TODOS"/>
+		<mx:Button x="947"
+				   y="137"
+				   width="36"
+				   icon="@Embed(source='embedded/images/REFRESCAR.png')"
+				   click="refrescarPermisos1()"
+				   toolTip="Refrescar Documentos"/>
+
+
+	</mx:Panel>
+
+</mx:Application>

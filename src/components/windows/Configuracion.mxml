@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" close="PopUpManager.removePopUp(this)" layout="absolute" width="340" height="194" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="CONFIGURACION DE ALERTAS">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager; 
+				]]>
+	</mx:Script>
+	<mx:Button x="234" y="118" width="38" id="btnGuardar" toolTip="GUARDAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_save.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="272" y="118" width="38" id="btnSalir" toolTip="SALIR">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:Label x="10" y="23" text="Sin Vencer cuando falten:"/>
+	<mx:Label x="10" y="51" text="Proximo a Vencer cuando falten:"/>
+	<mx:Label x="10" y="79" text="Vencido cuando falten:"/>
+	<mx:NumericStepper x="203"
+					   y="23"
+					   width="61"
+					   id="txtDiasSinVencer"
+					   maximum="365"
+					   minimum="1"/>
+	<mx:Label x="272" y="25" text="Dias"/>
+	<mx:NumericStepper x="203"
+					   y="51"
+					   width="61"
+					   id="txtProximoVencer"
+					   maximum="365"
+					   minimum="1"/>
+	<mx:Label x="272" y="53" text="Dias"/>
+	<mx:NumericStepper x="203"
+					   y="79"
+					   width="61"
+					   id="txtVencido"
+					   maximum="365"
+					   minimum="1"/>
+	<mx:Label x="272" y="81" text="Dias"/>
+	
+	
+</mx:TitleWindow>

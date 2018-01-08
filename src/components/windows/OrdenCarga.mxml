@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:comp="com.adobe.flex.extras.controls.*"	 close="PopUpManager.removePopUp(this)" layout="absolute" width="606" height="426" borderColor="#AFF71C" cornerRadius="20" backgroundColor="#FFFFFF" showCloseButton="true" horizontalAlign="left" verticalAlign="bottom" title="ORDEN DE CARGA" creationComplete="init()">
+<mx:Style>
+        ToolTip 
+        {
+            fontFamily: "Arial";
+            fontSize: 12;
+            fontStyle: "italic";
+            color: #000000;
+            backgroundColor: #FCEA1E;
+        }
+    </mx:Style>
+<mx:Script>
+		<![CDATA[
+			import mx.controls.List;
+			import components.windows.Catalogos.CatalogoConductor;
+			import components.windows.Catalogos.CatalogoItem;
+			import mx.managers.PopUpManager; 
+			import mx.collections.ArrayCollection;
+			import mx.managers.PopUpManager; 
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			import mx.controls.Alert;
+			import components.utils.ListUtils;
+			import context.Session;
+			import mx.managers.CursorManager;
+			import mx.events.ListEvent;
+			
+			private var remote:RemoteObject;
+			
+			[Bindable]
+            [Embed(source='embedded/images/info_large.gif')]
+             private var iconOk:Class;
+             
+             [Bindable]
+            [Embed(source='embedded/images/warning_large.gif')]
+             private var iconAdvertencia:Class;
+             
+             [Bindable]
+            [Embed(source='embedded/images/error_large.gif')]
+             private var iconError:Class;   
+             
+             
+            [Bindable]
+            public var dataCmbOrigen:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var dataCmbDestino:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var dataCmbTipoCarga:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var dataCmbTipoUnidad:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var dataCmbEstado:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var listaConductores:ArrayCollection = new ArrayCollection();
+            
+            [Bindable]
+            public var listaItems:ArrayCollection = new ArrayCollection();
+            
+            private var catalogoConductor:CatalogoConductor;
+            
+            private var catalogoItem:CatalogoItem;
+            
+            [Bindable]
+            public var items :ArrayCollection = new ArrayCollection();
+            public var item :Object = new Object();
+             
+             
+             //-- BEGIN LABEL FUNCTION -- //
+             
+             public function labelFunctionGenerica(item:Object):String {
+                return item.valor1; 
+             }
+             
+
+			private function init():void {
+				
+			 dtpFechaCarga.formatString="DD/MM/YYYY";
+			 dtpFechaCarga.selectedDate= new Date();	
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerCorrelativo);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("CORRELATIVO","ORDEN","1");
+				
+		     remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerOrigen);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("TABLAS","ORIGEN");
+
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+             CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerDestino);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("TABLAS","DESTINO");
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerTipoCarga);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("TABLAS","TIPOCARGA");
+			 
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerTipoUnidad);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("TABLAS","UNIDADMEDIDA");
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerEstado);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 remote.getUDC("TABLAS","ESTADOORDEN");
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerConductor);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);				
+			 remote.getConductores("");	
+			 
+			 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerItem);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);				
+			 remote.getItems("");	
+			 
+			}		
+			
+			private function resultHandlerItem(event:ResultEvent):void {
+				listaItems = event.result as ArrayCollection;
+				CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerConductor(event:ResultEvent):void {
+				listaConductores = event.result as ArrayCollection;
+				CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerCorrelativo(event:ResultEvent):void {
+			  var valor:Object ;
+			  var correlativo:int ;
+			  var udc:Object = new Object();
+			  
+			  valor= event.result as Object;
+			  correlativo= int(valor.valor3);
+			  correlativo=correlativo+1;
+	    	  lblCorrelativo.text = ListUtils.rellenar(correlativo.toString(),6);
+	    	  
+	    	 remote = new RemoteObject();
+			 remote.destination = "brokerPrimario";
+			 CursorManager.setBusyCursor();
+			 remote.addEventListener(ResultEvent.RESULT, resultHandlerUdc);
+			 remote.addEventListener(FaultEvent.FAULT, faultHandler);
+			 udc.sistema="CORRELATIVO";
+			 udc.subSistema="ORDEN";
+			 udc.id="1";
+			 udc.valor1="";
+			 udc.valor2="";
+			 udc.valor3=correlativo;
+			 remote.actualizarUDC(udc);
+	    	   
+	    	  CursorManager.removeBusyCursor();
+			}	
+			
+			
+			private function resultHandlerUdc(event:ResultEvent):void {
+	    	  
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerOrigen(event:ResultEvent):void {
+	    	  dataCmbOrigen = event.result as ArrayCollection;
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerDestino(event:ResultEvent):void {
+	    	  dataCmbDestino = event.result as ArrayCollection;
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerTipoCarga(event:ResultEvent):void {
+	    	  dataCmbTipoCarga = event.result as ArrayCollection;
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerTipoUnidad(event:ResultEvent):void {
+	    	  dataCmbTipoUnidad = event.result as ArrayCollection;
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function resultHandlerEstado(event:ResultEvent):void {
+	    	  dataCmbEstado = event.result as ArrayCollection;
+	    	  CursorManager.removeBusyCursor();
+			}
+			
+			private function faultHandler(event:FaultEvent):void {
+				detailsEnvioDatos.visible=false;
+				 CursorManager.removeBusyCursor();
+				var mensaje:String;
+				mensaje=event.fault.faultString.substr(event.fault.faultString.search(":")+1,event.fault.faultString.length-event.fault.faultString.search(":"));
+				if (mensaje.length==0)
+				mensaje= event.fault.rootCause.toString();
+				Alert.show(mensaje,"ERROR SISTEMA");
+			}
+			
+			private function mostrarCatalogoConductor():void{
+			    
+				catalogoConductor = CatalogoConductor(PopUpManager.createPopUp(this,CatalogoConductor, true));
+				PopUpManager.centerPopUp(catalogoConductor);	
+				catalogoConductor.addEventListener(Event.CLOSE,afterClickConductor);
+			}
+			
+			 private function afterClickConductor(event:Event):void {
+	       	
+				txtCedula.text =catalogoConductor.getIdCat();
+				txtNombre.text= catalogoConductor.getnombreCat();
+			}  
+			
+			private function mostrarCatalogoItem():void{
+			    
+				catalogoItem = CatalogoItem(PopUpManager.createPopUp(this,CatalogoItem, true));
+				PopUpManager.centerPopUp(catalogoItem);	
+				catalogoItem.addEventListener(Event.CLOSE,afterClickItem);
+			}
+			
+			 private function afterClickItem(event:Event):void {
+	       	
+				txtItem.text =catalogoItem.getIdCat();
+				txtDescripcionItem.text= catalogoItem.getnombreCat();
+			}  
+			
+			private function agregarItem():void {
+			
+				var x:int=0;
+				var encontrado:Boolean=false;
+			 	
+			 	while ((x<items.length) && (!encontrado))
+			 	{
+			 		
+			 		if ((items.getItemAt(x).idPrimario==txtItem.text))
+			 		{
+			 			encontrado=true;
+			 			items.removeItemAt(x);
+			 		}
+			 		x++;
+			 	} 
+				
+				item= new Object();
+				item.idPrimario=txtItem.text;
+				item.descripcion=txtDescripcionItem.text;
+				item.cantidad=txtCantidadItem.value
+				item.unidad=cmbUnidadItem.text;
+				items.addItem(item); 
+				detailsItem.visible=false;
+			}  
+			
+		private function desplegarWindowsItems():void
+		{
+			txtItem.text="";
+			txtDescripcionItem.text="";
+			txtCantidadItem.value=1;
+			cmbTipoCarga.selectedIndex=0;
+			detailsItem.visible=true;
+		}
+		
+		private function itemClickEventItem(event:ListEvent):void {
+			 	
+			txtItem.text=event.currentTarget.selectedItem.id_primario;
+			txtDescripcionItem.text=event.currentTarget.selectedItem.descripcion;;
+			txtCantidadItem.value=event.currentTarget.selectedItem.cantidad;;
+			cmbTipoCarga.text= event.currentTarget.selectedItem.unidad;
+			detailsItem.visible=true;
+		     
+	        }
+	        
+	         private function eliminarItem():void
+			{
+			  items.removeItemAt(dtItems.selectedIndex);
+			}
+			
+			private function guardarOrden():void
+			{
+			   var orden:Object = new Object();
+			   orden.ukid= lblCorrelativo.text;
+			   orden.cedula= txtCedula.text;
+			   orden.tipo_carga= cmbTipoCarga.text;
+			   orden.lugar_carga= cmbOrigen.text;
+			   orden.destino_carga= cmbDestino.text;
+			   orden.fecha_carga= dtpFechaCarga.text;
+			   orden.items=items;
+			    
+			    detailsEnvioDatos.visible=true;
+			    remote = new RemoteObject();
+			    remote.destination = "brokerPrimario";
+				remote.addEventListener(ResultEvent.RESULT, resultHandlerGuardarOrden);
+				remote.addEventListener(FaultEvent.FAULT, faultHandler);
+				remote.guardarOrden(orden);
+			
+			}
+			
+			private function resultHandlerGuardarOrden(event:ResultEvent):void {
+				detailsEnvioDatos.visible=false;
+
+				Alert.show("Se Ha Guardardo Correctamente la Orden !","INFORMACION",Alert.OK,this,null,iconOk);
+				//limpiar();
+				//ssaveButton.enabled=true;
+				//PopUpManager.removePopUp(this);
+				
+			}
+			
+			private function validarConductor():void
+			{
+			  if (txtNombre.text=="SIN CONDUCTOR")
+			  {
+			    txtNombre.text="";
+			  }
+			
+			}
+			
+			
+			
+				]]>
+	</mx:Script>
+	<mx:Button x="404" y="354" width="35" id="btnGuardar" toolTip="GUARDAR" click="guardarOrden()">
+		<mx:icon>@Embed(source='../../embedded/images/crud_save.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="370" y="354" width="35" id="btnNuevo" toolTip="NUEVO">
+		<mx:icon>@Embed(source='../../embedded/images/crud_new.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="437" y="354" width="35" id="btnBuscar" toolTip="BUSCAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="471" y="354" width="35" id="btnEliminar" toolTip="ELIMINAR">
+		<mx:icon>@Embed(source='../../embedded/images/crud_delete.png')</mx:icon>
+	</mx:Button>
+	
+	<comp:AutoCompleteModified id="txtNombre" 
+					width="455"
+					dataProvider="{listaConductores}" 
+					labelField="nombre" text=""
+					 x="121" y="38" focusIn="validarConductor()"/>		
+	<mx:Label x="10" y="12" text="Id Conductor"/>
+	<mx:Label x="10" y="96" text="Tipo de Carga"/>
+	<mx:Label x="10" y="42" text="Nombre"/>
+	<mx:Label x="10" y="68" text="Fecha Carga"/>
+	<mx:TextInput x="121" y="10" width="147" id="txtCedula" editable="false" text="{txtNombre.selectedItem.cedula}"/>
+	<mx:Button x="504" y="354" width="35" id="btnImprimir" toolTip="IMPRIMIR">
+		<mx:icon>@Embed(source='../../embedded/images/printer.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="538" y="354" width="38" id="btnSalir" toolTip="SALIR" click="PopUpManager.removePopUp(this)">
+		<mx:icon>@Embed(source='../../embedded/images/exit.png')</mx:icon>
+	</mx:Button>
+	<mx:DataGrid x="10" y="182" width="566" height="101" id="dtItems" dataProvider="{items}" itemDoubleClick="itemClickEventItem(event)" doubleClickEnabled="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Item" dataField="idPrimario" width="150" />
+			<mx:DataGridColumn headerText="Descripcion" dataField="descripcion"/>
+			<mx:DataGridColumn headerText="Cantidad" dataField="cantidad" width="100"/>
+			<mx:DataGridColumn headerText="Unidad" dataField="unidad" width="50"/>
+		</mx:columns>
+	</mx:DataGrid>
+	
+	<mx:Button x="541" y="291" width="35" id="btnEliminarItem" toolTip="ELIMINAR ITEM" click="eliminarItem()">
+		<mx:icon>@Embed(source='../../embedded/images/minus.png')</mx:icon>
+	</mx:Button>
+	<mx:Button x="504" y="291" width="35" id="btnAgregarItem" toolTip="AGREGAR ITEM" click="desplegarWindowsItems()">
+		<mx:icon>@Embed(source='../../embedded/images/plus.png')</mx:icon>
+	</mx:Button>
+	<mx:Button visible="false" x="275.5" y="10" width="35" id="btnBuscarConductor" toolTip="BUSCAR" click="mostrarCatalogoConductor()">
+		<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+	</mx:Button>
+	<mx:ComboBox x="121" y="94" id="cmbTipoCarga" labelFunction="labelFunctionGenerica" dataProvider="{dataCmbTipoCarga}" width="160"></mx:ComboBox>
+	<mx:Label x="10" y="126" text="Lugar de Carga"/>
+	<mx:ComboBox x="121" y="124" labelFunction="labelFunctionGenerica" dataProvider="{dataCmbOrigen}" width="160" id="cmbOrigen"></mx:ComboBox>
+	<mx:Label x="292" y="126" text="Destino de la Carga"/>
+	<mx:ComboBox x="416" y="124" labelFunction="labelFunctionGenerica" dataProvider="{dataCmbDestino}" width="160" id="cmbDestino"></mx:ComboBox>
+	<mx:Label x="10" y="161" text="PRODUCTOS A CARGAR" fontWeight="bold"/>
+	<mx:Label x="455" y="12" text="ORDEN N°" fontWeight="bold" color="#000000"/>
+	<mx:DateField x="121" y="66" width="131" id="dtpFechaCarga"/>
+	<mx:Label x="521" y="12" text="0" fontWeight="bold" color="#FF0000" id="lblCorrelativo"/>
+	<mx:TitleWindow visible="false" id="detailsEnvioDatos" width="441" height="104" layout="absolute" showCloseButton="false" backgroundColor="#FAFB93" borderStyle="solid" borderThickness="6" borderColor="#7F7F7F" title="Envio de Datos" close="detailsEnvioDatos.visible=false" color="#000000" x="72.5" y="152">
+    				<mx:ProgressBar id="pg" visible="true" x="29" y="10" width="351" label="Enviando la Informacion" maximum="100" minimum="0" indeterminate="true" fontSize="14"/>
+    </mx:TitleWindow>
+	<mx:Label x="366" y="70" text="Estado"/>
+	<mx:ComboBox x="416" y="68" id="cmbTipoCarga0" labelFunction="labelFunctionGenerica" dataProvider="{dataCmbEstado}" width="160"></mx:ComboBox>
+	<mx:TitleWindow visible="true" id="detailsItem" x="77" y="68" width="429" height="215" layout="absolute" showCloseButton="true" backgroundColor="#C8FE8E" borderStyle="solid" borderThickness="6" borderColor="#999999" title="Incluir Item en Orden" close="detailsItem.visible=false" color="#000000">
+					<mx:Label x="10" y="2" text="Descripcion" id="lblInspeccion3" fontWeight="bold"/>
+					<mx:Label x="10" y="62" text="Cantidad" id="lblFecha1" fontWeight="bold"/>
+					<mx:NumericStepper x="89" y="60" width="91" id="txtCantidadItem" maximum="100000" minimum="1"/>
+					<mx:Label x="10" y="90" text="Unidad" id="lblFecha2" fontWeight="bold"/>
+					<mx:Label x="10" y="32" text="Item" id="lblInspeccion4" fontWeight="bold"/>    				
+					<mx:TextInput x="89" y="30" width="134" editable="false" id="txtItem" text="{txtDescripcionItem.selectedItem.idPrimario}"/>
+					<mx:Button x="115" y="133" label="Agregar" width="75" id="btnAgregarEstimacion0" click="agregarItem()"/>
+					<mx:Button x="210" y="133" label="Salir" width="75" click="detailsItem.visible=false"/>
+					<mx:Button x="231" y="2" width="35" id="btnBuscarItem" visible="false" toolTip="BUSCAR" click="mostrarCatalogoItem()">
+						<mx:icon>@Embed(source='../../embedded/images/crud_browse.png')</mx:icon>
+					</mx:Button>
+					<mx:ComboBox x="89" y="88" labelFunction="labelFunctionGenerica" id="cmbUnidadItem" dataProvider="{dataCmbTipoUnidad}" width="91"></mx:ComboBox>
+					<comp:AutoCompleteModified id="txtDescripcionItem" 
+									width="308"
+									dataProvider="{listaItems}" 
+									labelField="descripcion" 
+									 x="89" y="0" />
+				</mx:TitleWindow>
+	
+	
+</mx:TitleWindow>
